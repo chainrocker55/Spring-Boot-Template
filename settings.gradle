@@ -1,0 +1,20 @@
+pluginManagement {
+    repositories {
+        def isPublic = System.getenv("BUILD_ENV") == 'public'
+        if(isPublic) {
+            mavenCentral()
+            maven { url "https://plugins.gradle.org/m2/" }
+        } else {
+            maven {
+                credentials {
+                    username "easyinvest"
+                    password "easyinvest12345!"
+                }
+                url 'http://artfactop.se.scb.co.th:8081/repository/easyinvest/'
+                allowInsecureProtocol = true
+            }
+        }
+    }
+}
+
+rootProject.name = 'easyinvest-da-authen-service'

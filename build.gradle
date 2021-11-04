@@ -1,0 +1,115 @@
+plugins {
+	id 'org.springframework.boot' version '2.5.5'
+	id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+	id 'java'
+}
+
+group = 'com.scbs'
+// version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '11'
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+ext {
+	major = '1'
+	minor = '0'
+	patch = '0'
+
+	MYSQL_VERSION = '8.0.25'
+	JJWT_VERSION = '0.9.1'
+	RETROFIT_VERSION = '2.7.2'
+	LOGBACK_ENCODER_VERSION = '4.11'
+	SPRING_DOC_VERSION = "1.5.2"
+	ASSERT_VERSION = "3.6.1"
+	LOGGING_INTERCEPTOR_VERSION = '4.9.0'
+	H2_DB_VERSION = '1.4.200'
+	COMMONS_CODEC = '1.15'
+	OKHTTP_VERSION = '4.9.0'
+	OKHTTP_LOGGING_VERSION = '4.9.0'
+	MARIADB_VERSION = '2.7.4'
+}
+
+def GITHASH = 'git rev-parse --verify --short HEAD'.execute().text.trim()
+def BUILD_VERSION = project.major + "." + project.minor + "." + project.patch + '-' + GITHASH
+def VERSION = ''
+if (project.hasProperty("build_version")) {
+	BUILD_VERSION = project.getProperty("build_version")
+}
+
+
+repositories {
+	def isPublic = System.getenv("BUILD_ENV") == "public"
+	logger.info("Loading public dependencies ==> $isPublic")
+	println("Loading public dependencies ENV ==> " + System.getenv("BUILD_ENV"))
+
+	if (project.hasProperty("BUILD_ENV")) {
+		isPublic = project.getProperty("BUILD_ENV") == "public"
+	}
+
+	if(isPublic) {
+		mavenCentral()
+	} else {
+		maven {
+			credentials {
+				username "easyinvest"
+				password "easyinvest12345!"
+			}
+			url 'http://artfactop.se.scb.co.th:8081/repository/easyinvest/'
+			allowInsecureProtocol = true
+		}
+	}
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+//	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-hibernate5'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+
+	compileOnly 'org.projectlombok:lombok'
+	implementation "org.mariadb.jdbc:mariadb-java-client:${MARIADB_VERSION}"
+	implementation "com.squareup.okhttp3:okhttp:${OKHTTP_VERSION}"
+	implementation "com.squareup.okhttp3:logging-interceptor:${OKHTTP_LOGGING_VERSION}"
+	implementation "io.jsonwebtoken:jjwt:${JJWT_VERSION}"
+	implementation "com.squareup.retrofit2:retrofit:${RETROFIT_VERSION}"
+	implementation "com.squareup.retrofit2:converter-gson:${RETROFIT_VERSION}"
+	implementation "com.squareup.retrofit2:adapter-rxjava2:${RETROFIT_VERSION}"
+	implementation "net.logstash.logback:logstash-logback-encoder:${LOGBACK_ENCODER_VERSION}"
+	implementation "org.springdoc:springdoc-openapi-ui:${SPRING_DOC_VERSION}"
+	implementation "org.springdoc:springdoc-openapi-data-rest:${SPRING_DOC_VERSION}"
+	implementation group: 'commons-codec', name: 'commons-codec', version: COMMONS_CODEC
+	runtimeOnly 'mysql:mysql-connector-java'
+	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+//	testImplementation 'org.springframework.security:spring-security-test'
+	testImplementation group: 'com.h2database', name: 'h2', version: H2_DB_VERSION
+	testImplementation "org.assertj:assertj-core:${ASSERT_VERSION}"
+}
+
+test {
+	useJUnitPlatform()
+	reports {
+		junitXml.enabled = false
+		html.enabled = true
+	}
+	testLogging {
+		events "passed", "skipped", "failed"
+	}
+
+}
+// Task for Jenkins to find the version quickly
+task printVersion {
+	doLast {
+		logger.quiet("VERSION=${VERSION}")
+		logger.quiet("BUILD_VERSION=${BUILD_VERSION}")
+	}
+}
+
+build.dependsOn(printVersion)
